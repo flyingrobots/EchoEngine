@@ -35,19 +35,24 @@ fi
 
 FAIL=0
 if [[ "$ALGO_CHANGED" -eq 1 && "$VERSION_CHANGED" -eq 0 ]]; then
-  echo "pre-commit: PRNG algorithm changed but PRNG_ALGO_VERSION was not bumped." >&2
+  echo "[pre-commit] Blocked: PRNG algorithm changed but PRNG_ALGO_VERSION was not bumped." >&2
+  echo "Why: We enforce byte-for-byte determinism. A version bump signals an intentional algorithm change to reviewers and CI." >&2
+  echo "How: Edit PRNG_ALGO_VERSION in $PRNG_FILE and update the golden regression vector in tests (next_int_golden_regression)." >&2
+  echo "Tip: Run: cargo test -p rmg-core --features golden_prng" >&2
   FAIL=1
 fi
 
 if [[ "$VERSION_CHANGED" -eq 1 && "$GOLDEN_CHANGED" -eq 0 ]]; then
-  echo "pre-commit: PRNG_ALGO_VERSION bumped but golden regression vector was not updated." >&2
+  echo "[pre-commit] Blocked: PRNG_ALGO_VERSION bumped but golden regression vector was not updated." >&2
+  echo "Why: Version and golden must change together to keep CI's bit-exact contract truthful." >&2
+  echo "How: Update the expected values in next_int_golden_regression inside $PRNG_FILE." >&2
+  echo "Tip: Validate locally with: cargo test -p rmg-core --features golden_prng" >&2
   FAIL=1
 fi
 
 if [[ "$FAIL" -eq 1 ]]; then
-  echo "pre-commit: Refusing commit. Update algorithm version and golden regression together." >&2
+  echo "[pre-commit] Refusing commit. Make a single commit that pairs the PRNG version change with its golden vector update." >&2
   exit 1
 fi
 
 exit 0
-
